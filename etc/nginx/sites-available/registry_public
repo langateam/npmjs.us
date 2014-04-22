@@ -1,7 +1,7 @@
 proxy_cache_path /var/lib/nginx/cache/npm/public_registry/tarballs
   levels=1
   keys_zone=public_registry_tarballs:4m
-  max_size=16g
+  max_size=32g
   inactive=180d;
 
 server {
@@ -34,16 +34,14 @@ server {
 
       # re-write npmjs.org tarball urls
       location ~* \.tgz$ {
-        rewrite ^(.*)/-/(.*)$ $1/$2;
-        rewrite ^/public/(.*)$ /registry/$1  break;
-        proxy_pass https://fullfatdb.npmjs.com;
+        rewrite ^/public/(.*)$ /$1  break;
+        proxy_pass http://registry.npmjs.org;
         proxy_cache public_registry_tarballs;
         proxy_cache_valid 404 1m;
       }
 
       # proxy to the view (see: https://github.com/npm/npm-registry-couchapp/issues/87#issuecomment-11673038)
       proxy_redirect off;
-      proxy_set_header Host $host;
       proxy_pass http://127.0.0.1:5984/public/_design/app/_rewrite;
 
       # transform tarball url in json object
