@@ -27,7 +27,7 @@ server {
     location /_utils {
       auth_basic "Restricted";
       auth_basic_user_file /etc/nginx/.htpasswd;
-      proxy_pass http://127.0.0.1:5984;
+      proxy_pass https://registry.npmjs.org;
     }
 
     location /public {
@@ -42,13 +42,13 @@ server {
 
       # proxy to the view (see: https://github.com/npm/npm-registry-couchapp/issues/87#issuecomment-11673038)
       proxy_redirect off;
-      proxy_pass http://127.0.0.1:5984/public/_design/app/_rewrite;
+      proxy_pass https://registry.npmjs.org/public/_design/app/_rewrite;
 
       # transform tarball url in json object
       sub_filter_types application/json text/plain;
-      sub_filter "http://registry.npmjs.org" "https://npm.langa.io/public";
+      sub_filter "https://registry.npmjs.org" "https://npm.langa.io/public";
       sub_filter_once off;
     }
-    proxy_pass http://127.0.0.1:5984;
+    proxy_pass https://registry.npmjs.org;
   }
 }
