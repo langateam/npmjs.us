@@ -6,16 +6,16 @@ proxy_cache_path /var/lib/nginx/cache/npm/public_registry/tarballs
 
 server {
   listen 80;
-  server_name registry.npmjs.us;
+  server_name npm.langa.io;
   return 301 https://$host$request_uri;
 }
 server {
   listen 443;
-  server_name registry.npmjs.us;
+  server_name npm.langa.io;
 
   ssl on;
-  ssl_certificate /srv/ssl/registry.npmjs.us.crt;
-  ssl_certificate_key /srv/ssl/registry.npmjs.us.key;
+  ssl_certificate /srv/ssl/npm.langa.io.crt;
+  ssl_certificate_key /srv/ssl/npm.langa.io.key;
 
   ssl_session_timeout 60m;
 
@@ -46,7 +46,7 @@ server {
 
       # transform tarball url in json object
       sub_filter_types application/json text/plain;
-      sub_filter "http://registry.npmjs.org" "https://registry.npmjs.us/public";
+      sub_filter "http://registry.npmjs.org" "https://npm.langa.io/public";
       sub_filter_once off;
     }
     proxy_pass http://127.0.0.1:5984;
