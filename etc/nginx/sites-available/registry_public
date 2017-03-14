@@ -4,6 +4,13 @@ proxy_cache_path /var/lib/nginx/cache/npm/public_registry/tarballs
   max_size=32g
   inactive=180d;
 
+
+proxy_cache_path /var/lib/nginx/cache/npm/public_registry/meta
+  levels=1
+  keys_zone=public_registry_meta:1m
+  max_size=1g
+  inactive=4m;
+
 server {
   listen 80;
   server_name npm.langa.io;
@@ -31,11 +38,19 @@ server {
     }
 
     location /public {
+      gzip on;
+      gzip_static on;
+      gzip_comp_level 1;
+      gzip_min_length 128;
+      gzip_proxied any;
+      gzip_types application/json;
+      gzip_vary on;
 
       # re-write npmjs.org tarball urls
       location ~* \.tgz$ {
         rewrite ^/public/(.*)$ /$1  break;
         proxy_pass http://registry.npmjs.org;
+
         proxy_cache public_registry_tarballs;
         proxy_cache_valid 404 1m;
       }
@@ -43,6 +58,9 @@ server {
       # proxy to the view (see: https://github.com/npm/npm-registry-couchapp/issues/87#issuecomment-11673038)
       proxy_redirect off;
       proxy_pass https://registry.npmjs.org/public/_design/app/_rewrite;
+      proxy_cache public_registry_meta;
+      proxy_cache_valid 404 1m;
+      proxy_cache_use_stale error timeout invalid_header updating;
 
       # transform tarball url in json object
       sub_filter_types application/json text/plain;
