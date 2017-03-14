@@ -4,18 +4,25 @@ proxy_cache_path /var/lib/nginx/cache/npm/public_registry/tarballs
   max_size=32g
   inactive=180d;
 
+
+proxy_cache_path /var/lib/nginx/cache/npm/public_registry/meta
+  levels=1
+  keys_zone=public_registry_meta:1m
+  max_size=1g
+  inactive=4m;
+
 server {
   listen 80;
-  server_name registry.npmjs.us;
+  server_name npm.langa.io;
   return 301 https://$host$request_uri;
 }
 server {
   listen 443;
-  server_name registry.npmjs.us;
+  server_name npm.langa.io;
 
   ssl on;
-  ssl_certificate /srv/ssl/registry.npmjs.us.crt;
-  ssl_certificate_key /srv/ssl/registry.npmjs.us.key;
+  ssl_certificate /srv/ssl/npm.langa.io.crt;
+  ssl_certificate_key /srv/ssl/npm.langa.io.key;
 
   ssl_session_timeout 60m;
 
@@ -27,28 +34,39 @@ server {
     location /_utils {
       auth_basic "Restricted";
       auth_basic_user_file /etc/nginx/.htpasswd;
-      proxy_pass http://127.0.0.1:5984;
+      proxy_pass https://registry.npmjs.org;
     }
 
     location /public {
+      gzip on;
+      gzip_static on;
+      gzip_comp_level 1;
+      gzip_min_length 128;
+      gzip_proxied any;
+      gzip_types application/json;
+      gzip_vary on;
 
       # re-write npmjs.org tarball urls
       location ~* \.tgz$ {
         rewrite ^/public/(.*)$ /$1  break;
         proxy_pass http://registry.npmjs.org;
+
         proxy_cache public_registry_tarballs;
         proxy_cache_valid 404 1m;
       }
 
       # proxy to the view (see: https://github.com/npm/npm-registry-couchapp/issues/87#issuecomment-11673038)
       proxy_redirect off;
-      proxy_pass http://127.0.0.1:5984/public/_design/app/_rewrite;
+      proxy_pass https://registry.npmjs.org/public/_design/app/_rewrite;
+      proxy_cache public_registry_meta;
+      proxy_cache_valid 404 1m;
+      proxy_cache_use_stale error timeout invalid_header updating;
 
       # transform tarball url in json object
       sub_filter_types application/json text/plain;
-      sub_filter "http://registry.npmjs.org" "https://registry.npmjs.us/public";
+      sub_filter "https://registry.npmjs.org" "https://npm.langa.io/public";
       sub_filter_once off;
     }
-    proxy_pass http://127.0.0.1:5984;
+    proxy_pass https://registry.npmjs.org;
   }
 }
